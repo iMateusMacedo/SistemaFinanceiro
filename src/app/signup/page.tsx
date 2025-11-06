@@ -11,6 +11,7 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -30,8 +31,15 @@ export default function SignupPage() {
     console.log('API Response:', data);
 
     if (res.ok) {
-      alert(data.message);
-      router.push('/');
+      setFullName('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setShowSuccessPopup(true);
+      setTimeout(() => {
+        setShowSuccessPopup(false);
+        router.push('/');
+      }, 5000);
     } else {
       alert(data.message);
     }
@@ -40,6 +48,11 @@ export default function SignupPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-slate-800 text-gray-100 font-sans">
       <div className="w-full max-w-md p-8 space-y-6 bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-700">
+        {showSuccessPopup && (
+          <div className="fixed top-5 right-5 bg-green-500 text-white p-4 rounded-lg shadow-lg">
+            Seu cadastro foi realizado com sucesso!
+          </div>
+        )}
         <h2 className="text-3xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
           Criar Nova Conta
         </h2>
