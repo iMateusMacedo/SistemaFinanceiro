@@ -8,12 +8,12 @@ export function useOutsideAlerter(ref: React.RefObject<any>, onOutsideClick: () 
       }
     }
 
-    if (ref.current) {
+    if (ref) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
-      if (ref.current) {
+      if (ref) {
         document.removeEventListener('mousedown', handleClickOutside);
       }
     };

@@ -5,12 +5,28 @@ import { Eye, EyeOff, Github, Chrome } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
-  const handleLogin = () => {
-    router.push("/home");
+  const handleLogin = async () => {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+      router.push("/home");
+    } else {
+      alert(data.message);
+    }
   };
 
   return (
@@ -44,6 +60,8 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 mt-1 bg-gray-700 rounded-lg border-2 border-gray-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition sm:text-sm"
               />
             </div>

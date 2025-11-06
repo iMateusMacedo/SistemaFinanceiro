@@ -40,7 +40,15 @@ export default function HomePage() {
 
   const addBalancePopupRef = useRef(null);
   const earningsChartPopupRef = useRef(null);
-  const debtsChartPopupRef = useRef(null);
+  const [debtsChartPopupRef, setDebtsChartPopupRef] = useState(null);
+  const [user, setUser] = useState<{ fullName: string } | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   useOutsideAlerter(addBalancePopupRef, () => setIsAddingBalance(false));
   useOutsideAlerter(earningsChartPopupRef, () => setIsEarningsChartOpen(false));
@@ -261,6 +269,10 @@ export default function HomePage() {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF1919'];
 
+  const getFirstName = (fullName: string) => {
+    return fullName.split(' ')[0];
+  };
+
   return (
     <>
       {isAddingBalance && (
@@ -316,7 +328,7 @@ export default function HomePage() {
             <div className="flex items-center">
               <WalletIcon />
               <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
-                Gerenciador Financeiro
+                {user ? `Olá, ${getFirstName(user.fullName)}` : 'Bem-vindo'}
               </h1>
               <button onClick={() => setIsBalanceVisible(!isBalanceVisible)} className="ml-4 text-gray-400 hover:text-gray-200">
                 {isBalanceVisible ? <EyeOpenIcon /> : <EyeClosedIcon />}
