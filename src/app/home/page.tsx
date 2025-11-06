@@ -14,6 +14,7 @@ interface Transaction {
   amount: number;
   category?: string;
   date: string;
+  isRecurring?: boolean;
 }
 export default function HomePage() {
   const router = useRouter();
@@ -46,6 +47,7 @@ export default function HomePage() {
   useOutsideAlerter(debtsChartPopupRef, () => setIsDebtsChartOpen(false));
 
   const [isAddingTransaction, setIsAddingTransaction] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
   const addTransactionPopupRef = useRef(null);
   useOutsideAlerter(addTransactionPopupRef, () => setIsAddingTransaction(false));
 
@@ -63,6 +65,37 @@ export default function HomePage() {
       document.removeEventListener('keydown', handleEscape);
     };
   }, []);
+
+  useEffect(() => {
+    const checkRecurringTransactions = () => {
+      const today = new Date();
+      if (today.getDate() === 1) {
+        const recurringDebts = debts.filter(d => d.isRecurring);
+        const recurringEarnings = earnings.filter(e => e.isRecurring);
+  
+        const newDebts = recurringDebts.map(d => ({
+          ...d,
+          id: Date.now() + Math.random(),
+          date: today.toISOString().slice(0, 10),
+        }));
+  
+        const newEarnings = recurringEarnings.map(e => ({
+          ...e,
+          id: Date.now() + Math.random(),
+          date: today.toISOString().slice(0, 10),
+        }));
+  
+        setDebts(prev => [...prev, ...newDebts]);
+        setEarnings(prev => [...prev, ...newEarnings]);
+      }
+    };
+  
+    const interval = setInterval(() => {
+      checkRecurringTransactions();
+    }, 1000 * 60 * 60 * 24); // Check once a day
+  
+    return () => clearInterval(interval);
+  }, [debts, earnings]);
 
   // Listas de categorias
   const debtCategories = [
@@ -137,6 +170,7 @@ export default function HomePage() {
       amount: numericAmount,
       category: category,
       date: new Date().toISOString().slice(0, 10),
+      isRecurring: isRecurring,
     };
 
     if (type === 'earning') {
@@ -187,6 +221,12 @@ export default function HomePage() {
     </svg>
   );
 
+  const PinIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 absolute top-2 right-2" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M16 12.414V4h-2v8.414l-4 4V20h10v-3.586l-4-4zM10 20H4v-3.586l4-4V4h2v8.414l-4 4V20z" />
+    </svg>
+  );
+
   const handleAddBalance = () => {
     const numericAmount = parseFloat(balanceToAdd);
     if (isNaN(numericAmount) || numericAmount <= 0) {
@@ -233,10 +273,10 @@ export default function HomePage() {
                 placeholder="Valor (R$)"
                 value={balanceToAdd}
                 onChange={(e) => setBalanceToAdd(e.target.value)}
-                className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition text-white"
+                className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-white focus:border-white outline-none transition text-white"
               />
               <div className="flex justify-end gap-4">
-                <button onClick={() => setIsAddingBalance(false)} className="bg-slate-600/50 text-gray-200 border border-slate-500 hover:text-red-400 hover:border-red-400 p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300">
+                <button onClick={() => setIsAddingBalance(false)} className="bg-slate-600/50 text-gray-200 border border-slate-500 hover:bg-white hover:text-slate-800 p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300">
                   Cancelar
                 </button>
                 <button onClick={handleAddBalance} className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300">
@@ -358,7 +398,7 @@ export default function HomePage() {
                         setType(e.target.value as 'earning' | 'debt');
                         setCategory(''); // Reseta a categoria ao trocar o tipo
                       }}
-                      className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                      className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-white focus:border-white outline-none transition"
                     >
                       <option value="debt">Dívida</option>
                       <option value="earning">Ganho</option>
@@ -368,14 +408,14 @@ export default function HomePage() {
                       placeholder="Descrição (opcional)"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                      className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-white focus:border-white outline-none transition"
                     />
                     
                     {type === 'debt' ? (
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                        className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-white focus:border-white outline-none transition"
                       >
                         <option value="">-- Categoria --</option>
                         {debtCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
@@ -384,7 +424,7 @@ export default function HomePage() {
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                        className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-white focus:border-white outline-none transition"
                       >
                         <option value="">-- Categoria --</option>
                         {earningCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
@@ -396,10 +436,28 @@ export default function HomePage() {
                       placeholder="Valor (R$)"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                      className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-white focus:border-white outline-none transition"
                     />
+                    <div className="flex items-center justify-between mt-4">
+                      <label htmlFor="recurring-switch" className="flex items-center cursor-pointer">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            id="recurring-switch"
+                            className="sr-only"
+                            checked={isRecurring}
+                            onChange={() => setIsRecurring(!isRecurring)}
+                          />
+                          <div className="block bg-gray-600 w-14 h-8 rounded-full"></div>
+                          <div className="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
+                        </div>
+                        <div className="ml-3 text-gray-200 font-medium">
+                          Fixar gasto/ganho mensal
+                        </div>
+                      </label>
+                    </div>
                     <div className="flex justify-end gap-4">
-                      <button type="button" onClick={() => setIsAddingTransaction(false)} className="bg-slate-600/50 text-gray-200 border border-slate-500 hover:text-red-400 hover:border-red-400 p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300">
+                      <button type="button" onClick={() => setIsAddingTransaction(false)} className="bg-slate-600/50 text-gray-200 border border-slate-500 hover:bg-white hover:text-slate-800 p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300">
                         Cancelar
                       </button>
                       <button type="submit" className={`p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 ${type === 'earning' ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700' : 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700'}`}>
@@ -427,7 +485,7 @@ export default function HomePage() {
 
                   {filteredEarnings.map(item => (
 
-                    <li key={item.id} className="bg-slate-700/50 p-4 rounded-lg flex justify-between items-center border border-slate-600 hover:bg-slate-700 transition-colors">
+                    <li key={item.id} className="bg-slate-700/50 p-4 rounded-lg flex justify-between items-center border border-slate-600 hover:bg-slate-700 transition-colors relative">
 
                       <div>
 
@@ -440,7 +498,7 @@ export default function HomePage() {
                       <span className={`font-bold text-lg ${item.category === 'Adição de Saldo' ? 'text-cyan-400' : 'text-emerald-400'}`}>
                         {isBalanceVisible ? `+ R$ ${item.amount.toFixed(2)}` : '+ R$ --'}
                       </span>
-
+                      {item.isRecurring && <PinIcon />}
                     </li>
 
                   ))}
@@ -462,7 +520,7 @@ export default function HomePage() {
 
                   {filteredDebts.map(item => (
 
-                    <li key={item.id} className="bg-slate-700/50 p-4 rounded-lg flex justify-between items-center border border-slate-600 hover:bg-slate-700 transition-colors">
+                    <li key={item.id} className="bg-slate-700/50 p-4 rounded-lg flex justify-between items-center border border-slate-600 hover:bg-slate-700 transition-colors relative">
 
                       <div>
 
@@ -473,7 +531,7 @@ export default function HomePage() {
                       </div>
 
                       <span className="font-bold text-lg text-red-400">{isBalanceVisible ? `- R$ ${item.amount.toFixed(2)}` : '- R$ --'}</span>
-
+                      {item.isRecurring && <PinIcon />}
                     </li>
 
                   ))}

@@ -20,8 +20,8 @@ export default function SideBar() {
   return (
     <div className="flex flex-col w-64 bg-slate-900 text-gray-100">
       <div className="flex items-center justify-center h-20 border-b border-slate-800">
-        <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
-          Finanças
+        <h1 className="text-2xl font-bold rainbow-text">
+          MG Wallet
         </h1>
       </div>
       <nav className="flex-grow p-4">
