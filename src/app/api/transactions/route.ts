@@ -1,3 +1,4 @@
+require('dotenv').config();
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
@@ -33,9 +34,15 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ user, transactions }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao buscar dados:', error);
-    return NextResponse.json({ message: 'Ocorreu um erro no servidor ao buscar os dados.' }, { status: 500 });
+    let errorMessage = 'Ocorreu um erro no servidor ao buscar os dados.';
+    if (error.code) { // Erros do Prisma
+      errorMessage = `Erro no banco de dados: ${error.message}`;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    return NextResponse.json({ message: errorMessage, details: error.toString() }, { status: 500 });
   }
 }
 
@@ -72,3 +79,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Ocorreu um erro no servidor ao criar a transação.' }, { status: 500 });
   }
 }
+
+export const runtime = 'nodejs';

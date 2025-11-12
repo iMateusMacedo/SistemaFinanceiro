@@ -1,3 +1,4 @@
+require('dotenv').config();
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
@@ -54,3 +55,5 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ message: 'Ocorreu um erro no servidor ao atualizar o saldo.' }, { status: 500 });
   }
 }
+
+export const runtime = 'nodejs';

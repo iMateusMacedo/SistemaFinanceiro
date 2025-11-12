@@ -40,8 +40,8 @@ export default function HomePage() {
   const [isRecurring, setIsRecurring] = useState(false);
 
   // Estados para controle da UI
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [isAddingBalance, setIsAddingBalance] = useState(false);
   const [balanceToAdd, setBalanceToAdd] = useState('');
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
@@ -55,6 +55,13 @@ export default function HomePage() {
   const earningsChartPopupRef = useRef(null);
   const debtsChartPopupRef = useRef(null);
   const addTransactionPopupRef = useRef(null);
+
+  // Efeito para definir a data inicial apenas no cliente para evitar erro de hidratação
+  useEffect(() => {
+    const today = new Date();
+    setSelectedMonth(today.getMonth());
+    setSelectedYear(today.getFullYear());
+  }, []);
 
   // Função para buscar dados da API
   const fetchData = useCallback(async () => {
@@ -91,6 +98,9 @@ export default function HomePage() {
 
   // Lógica para filtrar transações por mês/ano
   const { filteredEarnings, filteredDebts } = useMemo(() => {
+    if (selectedMonth === null || selectedYear === null) {
+      return { filteredEarnings: [], filteredDebts: [] };
+    }
     const earnings = transactions.filter(t => t.type === 'INCOME');
     const debts = transactions.filter(t => t.type === 'EXPENSE');
 

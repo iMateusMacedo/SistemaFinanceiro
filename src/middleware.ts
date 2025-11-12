@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET as string;
+import { jwtVerify } from 'jose';
 
 export async function middleware(req: NextRequest) {
   const token = req.cookies.get('token')?.value;
@@ -11,13 +9,12 @@ export async function middleware(req: NextRequest) {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    
-    // Adiciona o ID do usuário decodificado aos headers da requisição
-    // para que as rotas da API possam acessá-lo.
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET as string);
+    const { payload } = await jwtVerify(token, secret);
+
     const requestHeaders = new Headers(req.headers);
-    if (typeof decoded !== 'string' && decoded.userId) {
-      requestHeaders.set('x-user-id', decoded.userId.toString());
+    if (payload.userId) {
+      requestHeaders.set('x-user-id', payload.userId.toString());
     }
 
     return NextResponse.next({
@@ -26,12 +23,15 @@ export async function middleware(req: NextRequest) {
       },
     });
   } catch (error) {
-    return NextResponse.json({ message: 'Acesso não autorizado: Token inválido.' }, { status: 401 });
+    // Se o token for inválido (expirado, etc.), redireciona para o login
+    const loginUrl = new URL('/', req.url);
+    const response = NextResponse.redirect(loginUrl);
+    // Limpa o cookie inválido
+    response.cookies.delete('token');
+    return response;
   }
 }
 
-// Configuração do Matcher:
-// Aplica o middleware apenas às rotas de API que precisam de autenticação.
 export const config = {
   matcher: ['/api/transactions/:path*', '/api/user/:path*'],
 };
