@@ -47,7 +47,17 @@ const PieChartComponent: React.FC<PieChartComponentProps> = ({ data, colors, tit
             ))}
           </Pie>
           <Tooltip formatter={(value: number, name: string, props: any) => [`R$ ${value.toFixed(2)} (${(props.payload.percent * 100).toFixed(2)}%)`, name]} />
-          <Legend layout="vertical" verticalAlign="middle" align="right" iconType="square" wrapperStyle={{ right: 0, top: '50%', transform: 'translateY(-50%)' }} />
+          <Legend 
+            layout="vertical" 
+            verticalAlign="middle" 
+            align="right" 
+            iconType="square" 
+            wrapperStyle={{ right: 0, top: '50%', transform: 'translateY(-50%)' }}
+            formatter={(value, entry: any) => {
+              const { payload } = entry;
+              return `${value} - R$ ${payload.value.toFixed(2)}`;
+            }}
+          />
         </PieChart>
       </div>
     </div>

@@ -1,161 +1,127 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 const PieChartComponent = dynamic(() => import('@/components/PieChart'), { ssr: false });
 import { useOutsideAlerter } from '@/hooks/useOutsideAlerter';
 
-// Define a interface para uma transação
-interface Transaction {
+// Interfaces para os dados da API
+interface ApiTransaction {
   id: number;
   description: string;
   amount: number;
-  category?: string;
+  category: string;
   date: string;
-  isRecurring?: boolean;
+  isRecurring: boolean;
+  type: 'INCOME' | 'EXPENSE';
 }
+
+interface User {
+  fullName: string;
+  email: string;
+  balance: number;
+}
+
 export default function HomePage() {
   const router = useRouter();
-  // Estados para ganhos e dívidas
-  const [earnings, setEarnings] = useState<Transaction[]>([]);
-  const [debts, setDebts] = useState<Transaction[]>([]);
+  
+  // Estados para dados do backend
+  const [user, setUser] = useState<User | null>(null);
+  const [mainBalance, setMainBalance] = useState(0);
+  const [transactions, setTransactions] = useState<ApiTransaction[]>([]);
 
-  // Estados para os campos de input
+  // Estados para os campos de input do formulário
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
-  const [type, setType] = useState<'earning' | 'debt'>('debt');
+  const [transactionType, setTransactionType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE');
+  const [isRecurring, setIsRecurring] = useState(false);
 
+  // Estados para controle da UI
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-
   const [isAddingBalance, setIsAddingBalance] = useState(false);
   const [balanceToAdd, setBalanceToAdd] = useState('');
-  const [mainBalance, setMainBalance] = useState(0);
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+  const [isAddingTransaction, setIsAddingTransaction] = useState(false);
   const [isEarningsChartOpen, setIsEarningsChartOpen] = useState(false);
   const [isDebtsChartOpen, setIsDebtsChartOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Refs para popups
   const addBalancePopupRef = useRef(null);
   const earningsChartPopupRef = useRef(null);
-  const [debtsChartPopupRef, setDebtsChartPopupRef] = useState(null);
-  const [user, setUser] = useState<{ fullName: string } | null>(null);
+  const debtsChartPopupRef = useRef(null);
+  const addTransactionPopupRef = useRef(null);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+  // Função para buscar dados da API
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/transactions');
+      if (!res.ok) {
+        // Se o token for inválido ou expirado, o middleware retorna 401
+        if (res.status === 401) {
+          router.push('/'); // Redireciona para o login
+        }
+        throw new Error('Falha ao buscar dados');
+      }
+      const data = await res.json();
+      setUser(data.user);
+      setMainBalance(parseFloat(data.user.balance));
+      setTransactions(data.transactions);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
+  // Efeito para buscar dados no carregamento do componente
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Hooks para fechar popups
   useOutsideAlerter(addBalancePopupRef, () => setIsAddingBalance(false));
   useOutsideAlerter(earningsChartPopupRef, () => setIsEarningsChartOpen(false));
   useOutsideAlerter(debtsChartPopupRef, () => setIsDebtsChartOpen(false));
-
-  const [isAddingTransaction, setIsAddingTransaction] = useState(false);
-  const [isRecurring, setIsRecurring] = useState(false);
-  const addTransactionPopupRef = useRef(null);
   useOutsideAlerter(addTransactionPopupRef, () => setIsAddingTransaction(false));
 
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsAddingBalance(false);
-        setIsEarningsChartOpen(false);
-        setIsDebtsChartOpen(false);
-        setIsAddingTransaction(false);
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, []);
+  // Lógica para filtrar transações por mês/ano
+  const { filteredEarnings, filteredDebts } = useMemo(() => {
+    const earnings = transactions.filter(t => t.type === 'INCOME');
+    const debts = transactions.filter(t => t.type === 'EXPENSE');
 
-  useEffect(() => {
-    const checkRecurringTransactions = () => {
-      const today = new Date();
-      if (today.getDate() === 1) {
-        const recurringDebts = debts.filter(d => d.isRecurring);
-        const recurringEarnings = earnings.filter(e => e.isRecurring);
-  
-        const newDebts = recurringDebts.map(d => ({
-          ...d,
-          id: Date.now() + Math.random(),
-          date: today.toISOString().slice(0, 10),
-        }));
-  
-        const newEarnings = recurringEarnings.map(e => ({
-          ...e,
-          id: Date.now() + Math.random(),
-          date: today.toISOString().slice(0, 10),
-        }));
-  
-        setDebts(prev => [...prev, ...newDebts]);
-        setEarnings(prev => [...prev, ...newEarnings]);
-      }
-    };
-  
-    const interval = setInterval(() => {
-      checkRecurringTransactions();
-    }, 1000 * 60 * 60 * 24); // Check once a day
-  
-    return () => clearInterval(interval);
-  }, [debts, earnings]);
-
-  // Listas de categorias
-  const debtCategories = [
-    "Alimentação", "Serviços", "Casa", "Compras", "Educação", 
-    "Lazer", "Transações", "Saúde", "Transporte", "Viagem", "Outros"
-  ];
-  const earningCategories = [
-    "Investimentos", "Bonificação", "Empréstimos", "Transação", 
-    "Presente", "Renda Extra", "Salário", "Outros"
-  ];
-
-  // Filtra as transações com base no mês e ano selecionados
-  const filteredEarnings = useMemo(() => 
-    earnings.filter(item => {
+    const filterByDate = (items: ApiTransaction[]) => items.filter(item => {
       const itemDate = new Date(item.date);
       return itemDate.getMonth() === selectedMonth && itemDate.getFullYear() === selectedYear;
-    }),
-    [earnings, selectedMonth, selectedYear]
-  );
+    });
 
-  const filteredDebts = useMemo(() => 
-    debts.filter(item => {
-      const itemDate = new Date(item.date);
-      return itemDate.getMonth() === selectedMonth && itemDate.getFullYear() === selectedYear;
-    }),
-    [debts, selectedMonth, selectedYear]
-  );
+    return {
+      filteredEarnings: filterByDate(earnings),
+      filteredDebts: filterByDate(debts),
+    };
+  }, [transactions, selectedMonth, selectedYear]);
 
-  // Calcula totais usando useMemo para otimização
+  // Lógica para calcular totais
   const totalEarnings = useMemo(() => 
     filteredEarnings
       .filter(item => item.category !== 'Adição de Saldo')
-      .reduce((acc, item) => acc + item.amount, 0), 
+      .reduce((acc, item) => acc + Number(item.amount), 0), 
     [filteredEarnings]
   );
 
   const totalDebts = useMemo(() => 
-    filteredDebts.reduce((acc, item) => acc + item.amount, 0),
+    filteredDebts.reduce((acc, item) => acc + Number(item.amount), 0),
     [filteredDebts]
   );
 
+  const totalBalance = mainBalance; // O saldo total agora vem diretamente do backend
 
-  const totalBalance = useMemo(() => {
-    const totalEarningsAllTime = earnings
-      .filter(item => item.category !== 'Adição de Saldo')
-      .reduce((acc, item) => acc + item.amount, 0);
-    const totalDebtsAllTime = debts.reduce((acc, item) => acc + item.amount, 0);
-    return mainBalance + totalEarningsAllTime - totalDebtsAllTime;
-  }, [mainBalance, earnings, debts]);
-
-  // Função para lidar com o envio do formulário
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Função para adicionar uma nova transação
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     const numericAmount = parseFloat(amount);
@@ -164,114 +130,91 @@ export default function HomePage() {
       return;
     }
 
-    // Validação para a categoria "Outros" em ambos os tipos
-    if (category === 'Outros' && description.trim() === '') {
-      alert('Para a categoria "Outros", o campo de descrição é obrigatório.');
-      return;
-    }
-
     const finalDescription = description.trim() === '' ? category : description;
 
-    const newTransaction: Transaction = {
-      id: Date.now(),
-      description: finalDescription,
-      amount: numericAmount,
-      category: category,
-      date: new Date().toISOString().slice(0, 10),
-      isRecurring: isRecurring,
-    };
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: finalDescription,
+          amount: numericAmount,
+          category,
+          type: transactionType,
+          date: new Date().toISOString(),
+          isRecurring,
+        }),
+      });
 
-    if (type === 'earning') {
-      setEarnings([...earnings, newTransaction]);
-    } else {
-      setDebts([...debts, newTransaction]);
+      if (!res.ok) throw new Error('Falha ao criar transação');
+
+      // Limpa o formulário e atualiza os dados
+      setDescription('');
+      setAmount('');
+      setCategory('');
+      setIsRecurring(false);
+      setIsAddingTransaction(false);
+      fetchData(); // Re-busca os dados para atualizar a UI
+    } catch (error) {
+      console.error(error);
+      alert('Ocorreu um erro ao salvar a transação.');
     }
-
-    // Limpa os campos do formulário
-    setDescription('');
-    setAmount('');
-    setCategory('');
   };
 
-  // --- Ícones SVG para a UI ---
-  const WalletIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mr-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H4a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-  );
-  const ArrowUpIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-  );
-  const ArrowDownIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
-  );
-
-  const capitalizeFirstLetter = (string: string) => {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-  };
-
-  const EyeOpenIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-    </svg>
-  );
-
-  const EyeClosedIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7 .95-3.112 3.543-5.45 6.836-6.333m7.458 6.333a10.05 10.05 0 011.274 4.057M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 2l20 20" />
-    </svg>
-  );
-
-  const ChartIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-    </svg>
-  );
-
-  const PinIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 absolute top-2 right-2" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M16 12.414V4h-2v8.414l-4 4V20h10v-3.586l-4-4zM10 20H4v-3.586l4-4V4h2v8.414l-4 4V20z" />
-    </svg>
-  );
-
-  const handleAddBalance = () => {
+  // Função para adicionar saldo
+  const handleAddBalance = async () => {
     const numericAmount = parseFloat(balanceToAdd);
     if (isNaN(numericAmount) || numericAmount <= 0) {
       alert('Por favor, insira um valor monetário válido.');
       return;
     }
 
-    setMainBalance(mainBalance + numericAmount);
+    try {
+      const res = await fetch('/api/user/balance', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: numericAmount }),
+      });
 
-    const newTransaction: Transaction = {
-      id: Date.now(),
-      description: 'Saldo Adicionado',
-      amount: numericAmount,
-      category: 'Adição de Saldo',
-      date: new Date().toISOString().slice(0, 10),
-    };
-    setEarnings([...earnings, newTransaction]);
+      if (!res.ok) throw new Error('Falha ao adicionar saldo');
 
-    setBalanceToAdd('');
-    setIsAddingBalance(false);
+      // Limpa o campo e atualiza os dados
+      setBalanceToAdd('');
+      setIsAddingBalance(false);
+      fetchData(); // Re-busca os dados para atualizar a UI
+    } catch (error) {
+      console.error(error);
+      alert('Ocorreu um erro ao adicionar o saldo.');
+    }
   };
 
-  const getChartData = (transactions: Transaction[]) => {
+  // --- Listas de categorias ---
+  const debtCategories = ["Alimentação", "Serviços", "Casa", "Compras", "Educação", "Lazer", "Transações", "Saúde", "Transporte", "Viagem", "Outros"];
+  const earningCategories = ["Investimentos", "Bonificação", "Empréstimos", "Transação", "Presente", "Renda Extra", "Salário", "Outros"];
+
+  // --- Funções e Componentes de UI (sem alteração de lógica) ---
+  const WalletIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mr-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H4a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>;
+  const ArrowUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>;
+  const ArrowDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>;
+  const capitalizeFirstLetter = (string: string) => string.charAt(0).toUpperCase() + string.slice(1);
+  const EyeOpenIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>;
+  const EyeClosedIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7 .95-3.112 3.543-5.45 6.836-6.333m7.458 6.333a10.05 10.05 0 011.274 4.057M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 2l20 20" /></svg>;
+  const ChartIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>;
+  const PinIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 absolute top-2 right-2" viewBox="0 0 24 24" fill="currentColor"><path d="M16 12.414V4h-2v8.414l-4 4V20h10v-3.586l-4-4zM10 20H4v-3.586l4-4V4h2v8.414l-4 4V20z" /></svg>;
+  const getChartData = (transactions: ApiTransaction[]) => {
     const categoryTotals = transactions.reduce((acc, transaction) => {
       const category = transaction.category || 'Outros';
-      acc[category] = (acc[category] || 0) + transaction.amount;
+      acc[category] = (acc[category] || 0) + Number(transaction.amount);
       return acc;
     }, {} as { [key: string]: number });
-
     return Object.entries(categoryTotals).map(([name, value]) => ({ name, value }));
   };
-
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF1919'];
+  const getFirstName = (fullName: string) => fullName.split(' ')[0];
 
-  const getFirstName = (fullName: string) => {
-    return fullName.split(' ')[0];
-  };
+  if (isLoading) {
+    return <div className="bg-gradient-to-br from-gray-900 to-slate-800 text-gray-100 min-h-screen flex items-center justify-center">Carregando...</div>;
+  }
 
   return (
     <>
@@ -335,7 +278,6 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Filtros de Mês e Ano */}
             <div className="flex items-center gap-4">
               <select
                 value={selectedMonth}
@@ -362,15 +304,12 @@ export default function HomePage() {
             </div>
           </header>
 
-          {/* Painel de Resumo */}
           <section className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
             <div className="bg-slate-800/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-slate-700 transform hover:scale-105 transition-transform duration-300">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-cyan-400">Saldo Total</h2>
                 <button onClick={() => setIsAddingBalance(true)} className="text-cyan-400 hover:text-cyan-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                 </button>
               </div>
               <p className="text-4xl font-bold mt-2">{isBalanceVisible ? `R$ ${totalBalance.toFixed(2)}` : 'R$ --'}</p>
@@ -385,35 +324,31 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* Botão de Adicionar Nova Transação */}
           <section className="bg-slate-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-lg border border-slate-700 mb-10 flex justify-between items-center">
             <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">Adicionar Nova Transação</h2>
             <button onClick={() => setIsAddingTransaction(true)} className="text-emerald-400 hover:text-emerald-300">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
             </button>
           </section>
 
-          {/* Popup de Adicionar Nova Transação */}
           {isAddingTransaction && (
             <div ref={addTransactionPopupRef} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className={`bg-slate-800 p-8 rounded-2xl shadow-lg border-2 ${type === 'earning' ? 'border-emerald-500' : 'border-red-500'} w-full max-w-md`}>
-                <h2 className={`text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r ${type === 'earning' ? 'from-emerald-400 to-green-500' : 'from-red-500 to-pink-500'}`}>
-                  {type === 'earning' ? 'Adicionar Ganho' : 'Adicionar Dívida'}
+              <div className={`bg-slate-800 p-8 rounded-2xl shadow-lg border-2 ${transactionType === 'INCOME' ? 'border-emerald-500' : 'border-red-500'} w-full max-w-md`}>
+                <h2 className={`text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r ${transactionType === 'INCOME' ? 'from-emerald-400 to-green-500' : 'from-red-500 to-pink-500'}`}>
+                  {transactionType === 'INCOME' ? 'Adicionar Ganho' : 'Adicionar Dívida'}
                 </h2>
                 <form onSubmit={handleSubmit}>
                   <div className="grid grid-cols-1 gap-5">
                     <select 
-                      value={type}
+                      value={transactionType}
                       onChange={(e) => {
-                        setType(e.target.value as 'earning' | 'debt');
-                        setCategory(''); // Reseta a categoria ao trocar o tipo
+                        setTransactionType(e.target.value as 'INCOME' | 'EXPENSE');
+                        setCategory('');
                       }}
                       className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-white focus:border-white outline-none transition"
                     >
-                      <option value="debt">Dívida</option>
-                      <option value="earning">Ganho</option>
+                      <option value="EXPENSE">Dívida</option>
+                      <option value="INCOME">Ganho</option>
                     </select>
                     <input
                       type="text"
@@ -423,7 +358,7 @@ export default function HomePage() {
                       className="col-span-1 bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-white focus:border-white outline-none transition"
                     />
                     
-                    {type === 'debt' ? (
+                    {transactionType === 'EXPENSE' ? (
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
@@ -472,7 +407,7 @@ export default function HomePage() {
                       <button type="button" onClick={() => setIsAddingTransaction(false)} className="bg-slate-600/50 text-gray-200 border border-slate-500 hover:bg-white hover:text-slate-800 p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300">
                         Cancelar
                       </button>
-                      <button type="submit" className={`p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 ${type === 'earning' ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700' : 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700'}`}>
+                      <button type="submit" className={`p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 ${transactionType === 'INCOME' ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700' : 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700'}`}>
                         Adicionar
                       </button>
                     </div>
@@ -482,83 +417,53 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Listas de Transações */}
           <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             <div className="bg-slate-800/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-slate-700">
-
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-emerald-400 flex items-center"><ArrowUpIcon /> Ganhos</h2>
                 <button onClick={() => setIsEarningsChartOpen(true)} className="text-emerald-400 hover:text-emerald-300">
                   <ChartIcon />
                 </button>
               </div>
+              <ul className="space-y-3">
+                {filteredEarnings.map(item => (
+                  <li key={item.id} className="bg-slate-700/50 p-4 rounded-lg flex justify-between items-center border border-slate-600 hover:bg-slate-700 transition-colors relative">
+                    <div>
+                      <span className="font-semibold text-lg">{item.description}</span>
+                      <span className="text-sm text-cyan-400 block mt-1">{item.category}</span>
+                    </div>
+                    <span className={`font-bold text-lg ${item.category === 'Adição de Saldo' ? 'text-cyan-400' : 'text-emerald-400'}`}>
+                      {isBalanceVisible ? `+ R$ ${Number(item.amount).toFixed(2)}` : '+ R$ --'}
+                    </span>
+                    {item.isRecurring && <PinIcon />}
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-                <ul className="space-y-3">
-
-                  {filteredEarnings.map(item => (
-
-                    <li key={item.id} className="bg-slate-700/50 p-4 rounded-lg flex justify-between items-center border border-slate-600 hover:bg-slate-700 transition-colors relative">
-
-                      <div>
-
-                        <span className="font-semibold text-lg">{item.description}</span>
-
-                        <span className="text-sm text-cyan-400 block mt-1">{item.category}</span>
-
-                      </div>
-
-                      <span className={`font-bold text-lg ${item.category === 'Adição de Saldo' ? 'text-cyan-400' : 'text-emerald-400'}`}>
-                        {isBalanceVisible ? `+ R$ ${item.amount.toFixed(2)}` : '+ R$ --'}
-                      </span>
-                      {item.isRecurring && <PinIcon />}
-                    </li>
-
-                  ))}
-
-                </ul>
-
-              </div>
-
-              <div className="bg-slate-800/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-slate-700">
-
-                <div className="flex justify-between items-center mb-4">
+            <div className="bg-slate-800/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-slate-700">
+              <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-red-400 flex items-center"><ArrowDownIcon /> Dívidas</h2>
                 <button onClick={() => setIsDebtsChartOpen(true)} className="text-red-400 hover:text-red-300">
                   <ChartIcon />
                 </button>
               </div>
-
-                <ul className="space-y-3">
-
-                  {filteredDebts.map(item => (
-
-                    <li key={item.id} className="bg-slate-700/50 p-4 rounded-lg flex justify-between items-center border border-slate-600 hover:bg-slate-700 transition-colors relative">
-
-                      <div>
-
-                        <span className="font-semibold text-lg">{item.description}</span>
-
-                        <span className="text-sm text-cyan-400 block mt-1">{item.category}</span>
-
-                      </div>
-
-                      <span className="font-bold text-lg text-red-400">{isBalanceVisible ? `- R$ ${item.amount.toFixed(2)}` : '- R$ --'}</span>
-                      {item.isRecurring && <PinIcon />}
-                    </li>
-
-                  ))}
-
-                </ul>
-
-              </div>
-
-            </section>
-
-          </div>
-
-        </main>
-
-      </>
-
-    );
+              <ul className="space-y-3">
+                {filteredDebts.map(item => (
+                  <li key={item.id} className="bg-slate-700/50 p-4 rounded-lg flex justify-between items-center border border-slate-600 hover:bg-slate-700 transition-colors relative">
+                    <div>
+                      <span className="font-semibold text-lg">{item.description}</span>
+                      <span className="text-sm text-cyan-400 block mt-1">{item.category}</span>
+                    </div>
+                    <span className="font-bold text-lg text-red-400">{isBalanceVisible ? `- R$ ${Number(item.amount).toFixed(2)}` : '- R$ --'}</span>
+                    {item.isRecurring && <PinIcon />}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        </div>
+      </main>
+    </>
+  );
 }

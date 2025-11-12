@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
       data: {
         fullName,
         email,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
+        balance: 0,
       },
     });
 
