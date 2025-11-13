@@ -63,6 +63,11 @@ export default function SignupPage() {
 
         {/* Coluna da Direita: Formulário de Cadastro */}
         <div className="p-8 md:p-12">
+          {/* Mobile Header */}
+          <div className="md:hidden text-center mb-8">
+            <h1 className="text-4xl font-bold rainbow-text">MG Wallet</h1>
+          </div>
+
           <h2 className="text-3xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
             Cadastro
           </h2>
