@@ -357,7 +357,7 @@ export default function HomePage() {
         </div>
       )}
 
-      <main className="bg-gradient-to-br from-gray-900 to-slate-800 text-gray-100 min-h-screen font-sans">
+      <div className="bg-gradient-to-br from-gray-900 to-slate-800 text-gray-100 min-h-screen font-sans">
         <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
           <header className="flex items-center justify-between mb-10">
             <div className="flex items-center">
@@ -591,7 +591,7 @@ export default function HomePage() {
             </div>
           </section>
         </div>
-      </main>
+      </div>
     </>
   );
 }
