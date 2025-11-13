@@ -317,6 +317,7 @@ export default function HomePage() {
             <div className="grid grid-cols-1 gap-5">
               <input
                 type="number"
+                inputmode="numeric"
                 placeholder="Valor (R$)"
                 value={balanceToAdd}
                 onChange={(e) => setBalanceToAdd(e.target.value)}
@@ -472,6 +473,7 @@ export default function HomePage() {
 
                     <input
                       type="number"
+                      inputmode="numeric"
                       placeholder="Valor (R$)"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}

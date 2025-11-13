@@ -173,6 +173,7 @@ export default function GoalsPage() {
                 <div className="grid grid-cols-1 gap-5">
                   <input
                     type="number"
+                    inputmode="numeric"
                     placeholder="Gasto Mensal (R$)"
                     value={salaryInput}
                     onChange={(e) => setSalaryInput(e.target.value)}
