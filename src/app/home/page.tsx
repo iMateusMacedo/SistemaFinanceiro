@@ -250,7 +250,7 @@ export default function HomePage() {
   const earningCategories = ["Investimentos", "Bonificação", "Empréstimos", "Transação", "Presente", "Renda Extra", "Salário", "Outros"];
 
   // --- Funções e Componentes de UI (sem alteração de lógica) ---
-  const WalletIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mr-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H4a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>;
+  const WalletIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 md:h-8 md:w-8 mr-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H4a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>;
   const ArrowUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>;
   const ArrowDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>;
   const capitalizeFirstLetter = (string: string) => string.charAt(0).toUpperCase() + string.slice(1);
@@ -359,10 +359,10 @@ export default function HomePage() {
 
       <div className="bg-gradient-to-br from-gray-900 to-slate-800 text-gray-100 min-h-screen font-sans">
         <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
-          <header className="flex items-center justify-between mb-10">
+          <header className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4 md:gap-0">
             <div className="flex items-center">
               <WalletIcon />
-              <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
+              <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
                 {user ? `Olá, ${getFirstName(user.fullName)}` : 'Bem-vindo'}
               </h1>
               <button onClick={() => setIsBalanceVisible(!isBalanceVisible)} className="ml-4 text-gray-400 hover:text-gray-200">
