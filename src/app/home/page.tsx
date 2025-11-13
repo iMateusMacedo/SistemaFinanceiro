@@ -340,7 +340,7 @@ export default function HomePage() {
           <PieChartComponent
             data={getChartData(filteredEarnings)}
             colors={COLORS}
-            title={`Ganhos - ${capitalizeFirstLetter(new Date(0, selectedMonth).toLocaleString('pt-BR', { month: 'long' }))}`}
+            title={selectedMonth !== null ? `Ganhos - ${capitalizeFirstLetter(new Date(0, selectedMonth).toLocaleString('pt-BR', { month: 'long' }))}` : 'Ganhos'}
           />
           <button onClick={() => setIsEarningsChartOpen(false)} className="absolute top-4 right-4 text-white hover:text-red-500 text-4xl">&times;</button>
         </div>
@@ -351,7 +351,7 @@ export default function HomePage() {
           <PieChartComponent
             data={getChartData(filteredDebts)}
             colors={COLORS}
-            title={`Dívidas - ${capitalizeFirstLetter(new Date(0, selectedMonth).toLocaleString('pt-BR', { month: 'long' }))}`}
+            title={selectedMonth !== null ? `Dívidas - ${capitalizeFirstLetter(new Date(0, selectedMonth).toLocaleString('pt-BR', { month: 'long' }))}` : 'Dívidas'}
           />
           <button onClick={() => setIsDebtsChartOpen(false)} className="absolute top-4 right-4 text-white hover:text-red-500 text-4xl">&times;</button>
         </div>
