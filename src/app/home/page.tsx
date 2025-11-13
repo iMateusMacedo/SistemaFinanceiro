@@ -372,7 +372,7 @@ export default function HomePage() {
 
             <div className="flex items-center gap-4">
               <select
-                value={selectedMonth}
+                value={selectedMonth !== null ? selectedMonth : ''}
                 onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
                 className="bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
               >
@@ -383,7 +383,7 @@ export default function HomePage() {
                 ))}
               </select>
               <select
-                value={selectedYear}
+                value={selectedYear !== null ? selectedYear : ''}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                 className="bg-slate-700/50 p-3 rounded-lg border-2 border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
               >
