@@ -14,7 +14,7 @@ export async function middleware(req: NextRequest) {
 
     const requestHeaders = new Headers(req.headers);
     if (payload.userId) {
-      requestHeaders.set('x-user-id', payload.userId.toString());
+      requestHeaders.set('x-user-email', payload.userId as string);
     }
 
     return NextResponse.next({

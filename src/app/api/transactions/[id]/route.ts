@@ -62,57 +62,20 @@ function calculateAllCurrentSpents(user: any) {
   };
 }
 
-// GET: Busca os dados do usuário (saldo e transações)
-export async function GET(req: NextRequest) {
-  const userEmail = req.headers.get('x-user-email'); // Usaremos o email como identificador
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const userEmail = req.headers.get('x-user-email');
 
   if (!userEmail) {
     return NextResponse.json({ message: 'Usuário não autenticado.' }, { status: 401 });
   }
 
-  try {
-    const db = await readDbJson();
-    const user = db.users.find((u: any) => u.email === userEmail);
+  const transactionId = parseInt(params.id, 10);
 
-    if (!user) {
-      return NextResponse.json({ message: 'Usuário não encontrado.' }, { status: 404 });
-    }
-
-    // Não enviar a senha
-    const { password: _, ...userWithoutPassword } = user;
-
-    // Retornar o usuário sem a senha e suas transações
-    return NextResponse.json({ user: userWithoutPassword, transactions: user.transactions }, { status: 200 });
-  } catch (error: any) {
-    console.error('Erro ao buscar dados:', error);
-    let errorMessage = 'Ocorreu um erro no servidor ao buscar os dados.';
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    return NextResponse.json({ message: errorMessage, details: error.toString() }, { status: 500 });
-  }
-}
-
-// POST: Cria uma nova transação
-export async function POST(req: NextRequest) {
-  const userEmail = req.headers.get('x-user-email'); // Usaremos o email como identificador
-
-  if (!userEmail) {
-    return NextResponse.json({ message: 'Usuário não autenticado.' }, { status: 401 });
+  if (isNaN(transactionId)) {
+    return NextResponse.json({ message: 'ID da transação inválido.' }, { status: 400 });
   }
 
   try {
-    const { description, amount, type, category, date, isRecurring } = await req.json();
-
-    if (!description || !amount || !type || !category || !date) {
-      return NextResponse.json({ message: 'Todos os campos são obrigatórios.' }, { status: 400 });
-    }
-
-    const numericAmount = parseFloat(amount);
-    if (isNaN(numericAmount) || numericAmount <= 0) {
-      return NextResponse.json({ message: 'O valor da transação é inválido.' }, { status: 400 });
-    }
-
     const db = await readDbJson();
     const userIndex = db.users.findIndex((u: any) => u.email === userEmail);
 
@@ -121,23 +84,19 @@ export async function POST(req: NextRequest) {
     }
 
     const user = db.users[userIndex];
+    const transactionIndex = user.transactions.findIndex((t: any) => t.id === transactionId);
 
-    const newTransaction = {
-      id: user.transactions.length + 1, // ID simples para a transação
-      description,
-      amount: numericAmount,
-      type, // 'INCOME' or 'EXPENSE'
-      category,
-      date: new Date(date).toISOString(),
-      isRecurring: isRecurring || false,
-    };
-    user.transactions.push(newTransaction);
+    if (transactionIndex === -1) {
+      return NextResponse.json({ message: 'Transação não encontrada.' }, { status: 404 });
+    }
 
-    // Atualizar o saldo total
-    if (type === 'INCOME') {
-      user.totalBalance += numericAmount;
-    } else if (type === 'EXPENSE') {
-      user.totalBalance -= numericAmount;
+    const [deletedTransaction] = user.transactions.splice(transactionIndex, 1);
+
+    // Reverter o saldo total
+    if (deletedTransaction.type === 'INCOME') {
+      user.totalBalance -= deletedTransaction.amount;
+    } else if (deletedTransaction.type === 'EXPENSE') {
+      user.totalBalance += deletedTransaction.amount;
       
       // Lógica de Reset (para garantir que os gastos sejam zerados se necessário)
       const now = new Date();
@@ -157,7 +116,7 @@ export async function POST(req: NextRequest) {
         user.lastWeeklyReset = startOfWeek.toISOString();
       }
 
-      // Recalcular todos os currentSpent após adicionar uma despesa
+      // Recalcular todos os currentSpent após remover uma despesa
       const { currentSpentDaily, currentSpentWeekly, currentSpentMonthly } = calculateAllCurrentSpents(user);
       user.currentSpentDaily = currentSpentDaily;
       user.currentSpentWeekly = currentSpentWeekly;
@@ -166,14 +125,10 @@ export async function POST(req: NextRequest) {
 
     await writeDbJson(db);
 
-    return NextResponse.json(newTransaction, { status: 201 });
-  } catch (error: any) {
-    console.error('Erro ao criar transação:', error);
-    let errorMessage = 'Ocorreu um erro no servidor ao criar a transação.';
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    return NextResponse.json({ message: errorMessage, details: error.toString() }, { status: 500 });
+    return NextResponse.json({ message: 'Transação deletada com sucesso!', deletedTransaction }, { status: 200 });
+  } catch (error) {
+    console.error('Erro ao deletar transação:', error);
+    return NextResponse.json({ message: 'Ocorreu um erro no servidor ao deletar a transação.' }, { status: 500 });
   }
 }
 

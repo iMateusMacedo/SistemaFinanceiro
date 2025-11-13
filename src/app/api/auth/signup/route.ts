@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import fs from 'fs/promises';
+import path from 'path';
+import bcrypt from 'bcryptjs'; // Manter bcrypt para hash de senha
 
-const prisma = new PrismaClient();
+async function readDbJson() {
+  const dbPath = path.join(process.cwd(), 'db.json');
+  const fileContents = await fs.readFile(dbPath, 'utf8');
+  return JSON.parse(fileContents);
+}
+
+async function writeDbJson(data: any) {
+  const dbPath = path.join(process.cwd(), 'db.json');
+  await fs.writeFile(dbPath, JSON.stringify(data, null, 2), 'utf8');
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,26 +31,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'A senha deve ter no mínimo 8 caracteres, uma letra maiúscula, uma minúscula, um número e um caractere especial.' }, { status: 400 });
     }
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const db = await readDbJson();
+    const existingUser = db.users.find((u: any) => u.email === email);
 
     if (existingUser) {
       return NextResponse.json({ message: 'Este email já está em uso.' }, { status: 400 });
     }
 
+    // Hash da senha antes de salvar no JSON
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
-      data: {
-        fullName,
-        email,
-        passwordHash: hashedPassword,
-        balance: 0,
-      },
-    });
+    const newUser = {
+      email,
+      password: hashedPassword, // Salvar a senha hash
+      name: fullName.split(' ')[0], // Primeiro nome para a mensagem de boas-vindas
+      fullName,
+      totalBalance: 0,
+      transactions: [],
+    };
 
-    return NextResponse.json({ message: 'Usuário criado com sucesso!', user }, { status: 201 });
+    db.users.push(newUser);
+    await writeDbJson(db);
+
+    // Não enviar a senha de volta
+    const { password: _, ...userWithoutPassword } = newUser;
+
+    return NextResponse.json({ message: 'Usuário criado com sucesso!', user: userWithoutPassword }, { status: 201 });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: 'Ocorreu um erro no servidor.' }, { status: 500 });

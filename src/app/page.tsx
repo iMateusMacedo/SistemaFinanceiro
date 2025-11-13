@@ -65,10 +65,10 @@ export default function LoginPage() {
                 className="w-full px-4 py-3 mt-1 bg-gray-700 rounded-lg border-2 border-gray-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition sm:text-sm"
               />
             </div>
-            <div className="relative">
+            <div className="relative flex items-center mt-6">
               <label
                 htmlFor="password"
-                className="text-sm font-medium text-gray-400"
+                className="text-sm font-medium text-gray-400 absolute -top-6 left-0"
               >
                 Senha
               </label>
@@ -84,7 +84,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 h-full"
+                className="absolute right-0 flex items-center px-4 text-gray-500"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -107,18 +107,6 @@ export default function LoginPage() {
             >
               Entrar
             </button>
-          </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-sm text-gray-400">ou entre com</p>
-            <div className="flex justify-center gap-4 mt-4">
-              <button className="p-3 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">
-                <Chrome size={24} />
-              </button>
-              <button className="p-3 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">
-                <Github size={24} />
-              </button>
-            </div>
           </div>
 
           <div className="mt-8 text-sm text-center">

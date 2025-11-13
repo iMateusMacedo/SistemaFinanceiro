@@ -1,14 +1,24 @@
 require('dotenv').config();
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import fs from 'fs/promises';
+import path from 'path';
 
-const prisma = new PrismaClient();
+async function readDbJson() {
+  const dbPath = path.join(process.cwd(), 'db.json');
+  const fileContents = await fs.readFile(dbPath, 'utf8');
+  return JSON.parse(fileContents);
+}
+
+async function writeDbJson(data: any) {
+  const dbPath = path.join(process.cwd(), 'db.json');
+  await fs.writeFile(dbPath, JSON.stringify(data, null, 2), 'utf8');
+}
 
 // PUT: Adiciona um valor ao saldo do usuário e cria uma transação correspondente
 export async function PUT(req: NextRequest) {
-  const userId = req.headers.get('x-user-id');
+  const userEmail = req.headers.get('x-user-email'); // Usaremos o email como identificador
 
-  if (!userId) {
+  if (!userEmail) {
     return NextResponse.json({ message: 'Usuário não autenticado.' }, { status: 401 });
   }
 
@@ -20,33 +30,31 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ message: 'O valor fornecido é inválido.' }, { status: 400 });
     }
 
-    // Usar uma transação do Prisma para garantir que ambas as operações (ou nenhuma) sejam concluídas
-    const [updatedUser, newTransaction] = await prisma.$transaction([
-      // 1. Atualiza o saldo do usuário
-      prisma.user.update({
-        where: { id: parseInt(userId, 10) },
-        data: {
-          balance: {
-            increment: numericAmount,
-          },
-        },
-      }),
-      // 2. Cria um registro de transação para essa adição de saldo
-      prisma.transaction.create({
-        data: {
-          userId: parseInt(userId, 10),
-          description: 'Saldo Adicionado',
-          amount: numericAmount,
-          type: 'INCOME',
-          category: 'Adição de Saldo',
-          date: new Date(),
-        },
-      }),
-    ]);
+    const db = await readDbJson();
+    const userIndex = db.users.findIndex((u: any) => u.email === userEmail);
+
+    if (userIndex === -1) {
+      return NextResponse.json({ message: 'Usuário não encontrado.' }, { status: 404 });
+    }
+
+    const user = db.users[userIndex];
+    user.totalBalance += numericAmount;
+
+    const newTransaction = {
+      id: user.transactions.length + 1, // ID simples para a transação
+      description: 'Saldo Adicionado',
+      amount: numericAmount,
+      type: 'INCOME',
+      category: 'Adição de Saldo',
+      date: new Date().toISOString(),
+    };
+    user.transactions.push(newTransaction);
+
+    await writeDbJson(db);
 
     return NextResponse.json({ 
       message: 'Saldo atualizado com sucesso!', 
-      user: updatedUser,
+      user: { ...user, password: undefined }, // Não enviar a senha
       transaction: newTransaction 
     }, { status: 200 });
 

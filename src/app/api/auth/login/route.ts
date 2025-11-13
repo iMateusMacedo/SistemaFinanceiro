@@ -1,11 +1,16 @@
 require('dotenv').config();
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
+import fs from 'fs/promises';
+import path from 'path';
+import bcrypt from 'bcryptjs'; // Adicionado
 
-const prisma = new PrismaClient();
+async function readDbJson() {
+  const dbPath = path.join(process.cwd(), 'db.json');
+  const fileContents = await fs.readFile(dbPath, 'utf8');
+  return JSON.parse(fileContents);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,15 +20,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Email e senha são obrigatórios.' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const db = await readDbJson();
+    const user = db.users.find((u: any) => u.email === email);
 
     if (!user) {
       return NextResponse.json({ message: 'Usuário não encontrado.' }, { status: 404 });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    // Usar bcrypt.compare para verificar a senha hash
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
       return NextResponse.json({ message: 'Senha inválida.' }, { status: 401 });
@@ -31,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     // Create JWT token using 'jose'
     const secret = new TextEncoder().encode(process.env.JWT_SECRET as string);
-    const token = await new SignJWT({ userId: user.id })
+    const token = await new SignJWT({ userId: user.email }) // Usando email como userId para simplificar
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('7d')
       .sign(secret);
@@ -46,15 +51,13 @@ export async function POST(req: NextRequest) {
     });
 
     // Don't send the password back to the client
-    const { passwordHash: _, ...userWithoutPassword } = user;
+    const { password: _, ...userWithoutPassword } = user;
 
     return NextResponse.json({ message: 'Login bem-sucedido!', user: userWithoutPassword }, { status: 200 });
   } catch (error: any) {
     console.error(error);
     let errorMessage = 'Ocorreu um erro no servidor.';
-    if (error.code) {
-      errorMessage = `Erro no banco de dados: ${error.message}`;
-    } else if (error.name === 'JsonWebTokenError' || error.name === 'JWTExpired' || error.name === 'JOSEError') {
+    if (error.name === 'JsonWebTokenError' || error.name === 'JWTExpired' || error.name === 'JOSEError') {
       errorMessage = `Erro no token: ${error.message}`;
     } else if (error instanceof Error) {
       errorMessage = error.message;

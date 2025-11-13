@@ -27,6 +27,15 @@ const PieChartComponent: React.FC<PieChartComponentProps> = ({ data, colors, tit
     );
   };
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
   return (
     <div className="bg-slate-800 p-8 rounded-2xl shadow-lg border border-slate-700 w-full max-w-4xl">
       <h1 className="text-3xl font-bold mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">{title}</h1>
@@ -46,7 +55,7 @@ const PieChartComponent: React.FC<PieChartComponentProps> = ({ data, colors, tit
               <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(value: number, name: string, props: any) => [`R$ ${value.toFixed(2)} (${(props.payload.percent * 100).toFixed(2)}%)`, name]} />
+          <Tooltip formatter={(value: number, name: string, props: any) => [formatCurrency(value), name]} />
           <Legend 
             layout="vertical" 
             verticalAlign="middle" 
@@ -55,7 +64,7 @@ const PieChartComponent: React.FC<PieChartComponentProps> = ({ data, colors, tit
             wrapperStyle={{ right: 0, top: '50%', transform: 'translateY(-50%)' }}
             formatter={(value, entry: any) => {
               const { payload } = entry;
-              return `${value} - R$ ${payload.value.toFixed(2)}`;
+              return `${value} - ${formatCurrency(payload.value)}`;
             }}
           />
         </PieChart>

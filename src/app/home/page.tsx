@@ -49,6 +49,11 @@ export default function HomePage() {
   const [isEarningsChartOpen, setIsEarningsChartOpen] = useState(false);
   const [isDebtsChartOpen, setIsDebtsChartOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hoveredItemId, setHoveredItemId] = useState<number | null>(null); // Novo estado para hover
+  const [longPressedItemId, setLongPressedItemId] = useState<number | null>(null); // Novo estado para long press
+  const longPressTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [showConfirmDeletePopup, setShowConfirmDeletePopup] = useState(false); // Novo estado para o popup de confirmação
+  const [transactionToDelete, setTransactionToDelete] = useState<number | null>(null); // ID da transação a ser deletada
 
   // Refs para popups
   const addBalancePopupRef = useRef(null);
@@ -76,7 +81,7 @@ export default function HomePage() {
       }
       const data = await res.json();
       setUser(data.user);
-      setMainBalance(parseFloat(data.user.balance));
+      setMainBalance(parseFloat(data.user.totalBalance));
       setTransactions(data.transactions);
     } catch (error) {
       console.error(error);
@@ -198,6 +203,48 @@ export default function HomePage() {
     }
   };
 
+  // Função para deletar transação (abre o popup de confirmação)
+  const handleDeleteTransaction = (id: number) => {
+    setTransactionToDelete(id);
+    setShowConfirmDeletePopup(true);
+  };
+
+  // Função que executa a deleção após a confirmação
+  const confirmDelete = async () => {
+    if (transactionToDelete === null) return;
+
+    try {
+      const res = await fetch(`/api/transactions/${transactionToDelete}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) throw new Error('Falha ao deletar transação');
+
+      fetchData(); // Re-busca os dados para atualizar a UI
+      setShowConfirmDeletePopup(false); // Fecha o popup
+      setTransactionToDelete(null); // Limpa o ID da transação
+    } catch (error) {
+      console.error(error);
+      alert('Ocorreu um erro ao deletar a transação.');
+      setShowConfirmDeletePopup(false); // Fecha o popup em caso de erro
+      setTransactionToDelete(null); // Limpa o ID da transação
+    }
+  };
+
+  // Lógica para long press
+  const handleTouchStart = (id: number) => {
+    longPressTimeout.current = setTimeout(() => {
+      setLongPressedItemId(id);
+    }, 500); // 500ms para considerar long press
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimeout.current) {
+      clearTimeout(longPressTimeout.current);
+      longPressTimeout.current = null;
+    }
+  };
+
   // --- Listas de categorias ---
   const debtCategories = ["Alimentação", "Serviços", "Casa", "Compras", "Educação", "Lazer", "Transações", "Saúde", "Transporte", "Viagem", "Outros"];
   const earningCategories = ["Investimentos", "Bonificação", "Empréstimos", "Transação", "Presente", "Renda Extra", "Salário", "Outros"];
@@ -222,12 +269,47 @@ export default function HomePage() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF1919'];
   const getFirstName = (fullName: string) => fullName.split(' ')[0];
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
   if (isLoading) {
     return <div className="bg-gradient-to-br from-gray-900 to-slate-800 text-gray-100 min-h-screen flex items-center justify-center">Carregando...</div>;
   }
 
   return (
     <>
+      {showConfirmDeletePopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-slate-800 p-8 rounded-2xl shadow-lg border border-slate-700 w-full max-w-md text-center">
+            <h2 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-pink-500">Confirmar Exclusão</h2>
+            <p className="text-gray-300 mb-8">Tem certeza que deseja deletar este item?</p>
+            <div className="flex justify-center gap-4">
+              <button 
+                onClick={() => {
+                  setShowConfirmDeletePopup(false);
+                  setTransactionToDelete(null);
+                }} 
+                className="bg-slate-600/50 text-gray-200 border border-slate-500 hover:bg-white hover:text-slate-800 p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+              >
+                Não
+              </button>
+              <button 
+                onClick={confirmDelete} 
+                className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 text-white"
+              >
+                Sim
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isAddingBalance && (
         <div ref={addBalancePopupRef} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-slate-800 p-8 rounded-2xl shadow-lg border border-slate-700 w-full max-w-md">
@@ -244,7 +326,7 @@ export default function HomePage() {
                 <button onClick={() => setIsAddingBalance(false)} className="bg-slate-600/50 text-gray-200 border border-slate-500 hover:bg-white hover:text-slate-800 p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300">
                   Cancelar
                 </button>
-                <button onClick={handleAddBalance} className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300">
+                <button onClick={handleAddBalance} className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 p-3 rounded-lg font-bold text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 text-white">
                   Adicionar
                 </button>
               </div>
@@ -322,15 +404,15 @@ export default function HomePage() {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                 </button>
               </div>
-              <p className="text-4xl font-bold mt-2">{isBalanceVisible ? `R$ ${totalBalance.toFixed(2)}` : 'R$ --'}</p>
+              <p className="text-4xl font-bold mt-2">{isBalanceVisible ? formatCurrency(totalBalance) : 'R$ --'}</p>
             </div>
             <div className="bg-slate-800/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-slate-700 transform hover:scale-105 transition-transform duration-300">
               <h2 className="text-lg font-semibold text-emerald-400 flex items-center">Ganhos Totais</h2>
-              <p className="text-4xl font-bold mt-2">{isBalanceVisible ? `R$ ${totalEarnings.toFixed(2)}` : 'R$ --'}</p>
+              <p className="text-4xl font-bold mt-2">{isBalanceVisible ? formatCurrency(totalEarnings) : 'R$ --'}</p>
             </div>
             <div className="bg-slate-800/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-slate-700 transform hover:scale-105 transition-transform duration-300">
               <h2 className="text-lg font-semibold text-red-400">Dívidas Totais</h2>
-              <p className="text-4xl font-bold mt-2">{isBalanceVisible ? `R$ ${totalDebts.toFixed(2)}` : 'R$ --'}</p>
+              <p className="text-4xl font-bold mt-2">{isBalanceVisible ? formatCurrency(totalDebts) : 'R$ --'}</p>
             </div>
           </section>
 
@@ -437,15 +519,33 @@ export default function HomePage() {
               </div>
               <ul className="space-y-3">
                 {filteredEarnings.map(item => (
-                  <li key={item.id} className="bg-slate-700/50 p-4 rounded-lg flex justify-between items-center border border-slate-600 hover:bg-slate-700 transition-colors relative">
+                  <li 
+                    key={item.id} 
+                    className="bg-slate-700/50 p-4 rounded-lg flex justify-between items-center border border-slate-600 hover:bg-slate-700 transition-colors relative"
+                    onMouseEnter={() => setHoveredItemId(item.id)}
+                    onMouseLeave={() => setHoveredItemId(null)}
+                    onTouchStart={() => handleTouchStart(item.id)}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchCancel={handleTouchEnd}
+                  >
                     <div>
                       <span className="font-semibold text-lg">{item.description}</span>
                       <span className="text-sm text-cyan-400 block mt-1">{item.category}</span>
                     </div>
                     <span className={`font-bold text-lg ${item.category === 'Adição de Saldo' ? 'text-cyan-400' : 'text-emerald-400'}`}>
-                      {isBalanceVisible ? `+ R$ ${Number(item.amount).toFixed(2)}` : '+ R$ --'}
+                      {isBalanceVisible ? `+ ${formatCurrency(Number(item.amount))}` : '+ R$ --'}
                     </span>
                     {item.isRecurring && <PinIcon />}
+                    {(hoveredItemId === item.id || longPressedItemId === item.id) && (
+                      <button 
+                        onClick={() => handleDeleteTransaction(item.id)}
+                        className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold shadow-md"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -460,13 +560,31 @@ export default function HomePage() {
               </div>
               <ul className="space-y-3">
                 {filteredDebts.map(item => (
-                  <li key={item.id} className="bg-slate-700/50 p-4 rounded-lg flex justify-between items-center border border-slate-600 hover:bg-slate-700 transition-colors relative">
+                  <li 
+                    key={item.id} 
+                    className="bg-slate-700/50 p-4 rounded-lg flex justify-between items-center border border-slate-600 hover:bg-slate-700 transition-colors relative"
+                    onMouseEnter={() => setHoveredItemId(item.id)}
+                    onMouseLeave={() => setHoveredItemId(null)}
+                    onTouchStart={() => handleTouchStart(item.id)}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchCancel={handleTouchEnd}
+                  >
                     <div>
                       <span className="font-semibold text-lg">{item.description}</span>
                       <span className="text-sm text-cyan-400 block mt-1">{item.category}</span>
                     </div>
-                    <span className="font-bold text-lg text-red-400">{isBalanceVisible ? `- R$ ${Number(item.amount).toFixed(2)}` : '- R$ --'}</span>
+                    <span className="font-bold text-lg text-red-400">{isBalanceVisible ? `- ${formatCurrency(Number(item.amount))}` : '- R$ --'}</span>
                     {item.isRecurring && <PinIcon />}
+                    {(hoveredItemId === item.id || longPressedItemId === item.id) && (
+                      <button 
+                        onClick={() => handleDeleteTransaction(item.id)}
+                        className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold shadow-md"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>

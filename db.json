@@ -1,0 +1,98 @@
+{
+  "users": [
+    {
+      "email": "mateusdesamacedo@gmail.com",
+      "password": "$2b$10$I4TL/bHJGBZxXSsuF9EphOE91Eb0DJX8WWUh2F8xjfhOijRGAw75q",
+      "name": "Mateus",
+      "fullName": "Mateus Ferreira de Sá Macedo",
+      "totalBalance": 59918.1,
+      "transactions": [
+        {
+          "id": 1,
+          "description": "Saldo Adicionado",
+          "amount": 60000,
+          "type": "INCOME",
+          "category": "Adição de Saldo",
+          "date": "2025-11-13T01:23:36.770Z"
+        },
+        {
+          "id": 2,
+          "description": "Espetinho",
+          "amount": 36.9,
+          "type": "EXPENSE",
+          "category": "Alimentação",
+          "date": "2025-11-13T01:25:19.088Z",
+          "isRecurring": false
+        },
+        {
+          "id": 3,
+          "description": "park",
+          "amount": 45,
+          "type": "EXPENSE",
+          "category": "Lazer",
+          "date": "2025-11-13T15:24:58.772Z",
+          "isRecurring": false
+        }
+      ],
+      "monthlySalary": 1500,
+      "goalType": "daily",
+      "goalAmount": 50,
+      "currentSpent": 36.9,
+      "goalAmountDaily": 50,
+      "goalAmountWeekly": 375,
+      "goalAmountMonthly": 1500,
+      "currentSpentDaily": 45,
+      "currentSpentWeekly": 81.9,
+      "currentSpentMonthly": 81.9,
+      "lastDailyReset": "2025-11-13T03:00:00.000Z",
+      "lastWeeklyReset": "2025-11-09T03:00:00.000Z"
+    },
+    {
+      "email": "bibicabr95@gmail.com",
+      "password": "$2b$10$CuWSIEGsgKSUnMNr0KzRfuu7xdtHnYSSCoFgBT/UERlatLGqdu/S2",
+      "name": "Beatriz",
+      "fullName": "Beatriz Alves Sena",
+      "totalBalance": 2770,
+      "transactions": [
+        {
+          "id": 1,
+          "description": "Saldo Adicionado",
+          "amount": 3000,
+          "type": "INCOME",
+          "category": "Adição de Saldo",
+          "date": "2025-11-13T01:35:10.176Z"
+        },
+        {
+          "id": 2,
+          "description": "Produto de limpeza",
+          "amount": 120,
+          "type": "EXPENSE",
+          "category": "Compras",
+          "date": "2025-11-13T01:35:56.129Z",
+          "isRecurring": false
+        },
+        {
+          "id": 3,
+          "description": "Fogo no chuveiro",
+          "amount": 110,
+          "type": "EXPENSE",
+          "category": "Casa",
+          "date": "2025-11-13T01:36:15.487Z",
+          "isRecurring": false
+        }
+      ],
+      "monthlySalary": 0,
+      "goalType": "monthly",
+      "goalAmount": 0,
+      "currentSpent": 0,
+      "goalAmountDaily": 0,
+      "goalAmountWeekly": 0,
+      "goalAmountMonthly": 0,
+      "currentSpentDaily": 0,
+      "currentSpentWeekly": 0,
+      "currentSpentMonthly": 0,
+      "lastDailyReset": "2025-11-12T00:00:00.000Z",
+      "lastWeeklyReset": "2025-11-10T00:00:00.000Z"
+    }
+  ]
+}
