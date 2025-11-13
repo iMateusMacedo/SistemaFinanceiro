@@ -316,8 +316,9 @@ export default function HomePage() {
             <h2 className="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">Adicionar Saldo</h2>
             <div className="grid grid-cols-1 gap-5">
               <input
-                type="number"
-                inputmode="numeric"
+                type="text"
+                inputmode="decimal"
+                pattern="[0-9,]*"
                 placeholder="Valor (R$)"
                 value={balanceToAdd}
                 onChange={(e) => setBalanceToAdd(e.target.value)}
@@ -472,8 +473,9 @@ export default function HomePage() {
                     )}
 
                     <input
-                      type="number"
-                      inputmode="numeric"
+                      type="text"
+                      inputmode="decimal"
+                      pattern="[0-9,]*"
                       placeholder="Valor (R$)"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
