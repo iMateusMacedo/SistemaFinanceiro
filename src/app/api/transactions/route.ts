@@ -108,6 +108,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Todos os campos são obrigatórios.' }, { status: 400 });
     }
 
+    const transactionDate = new Date(date);
+    const now = new Date();
+
+    const transactionYear = transactionDate.getFullYear();
+    const transactionMonth = transactionDate.getMonth();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    if (transactionYear > currentYear || (transactionYear === currentYear && transactionMonth > currentMonth)) {
+      return NextResponse.json({ message: 'Ainda não é possível realizar transações nesse mês' }, { status: 400 });
+    }
+
+    if (transactionYear < currentYear || (transactionYear === currentYear && transactionMonth < currentMonth)) {
+      return NextResponse.json({ message: 'Não é possível realizar mais transações nesse mês' }, { status: 400 });
+    }
+
     const numericAmount = parseFloat(amount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
       return NextResponse.json({ message: 'O valor da transação é inválido.' }, { status: 400 });

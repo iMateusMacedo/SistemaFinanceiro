@@ -156,12 +156,15 @@ export default function HomePage() {
           amount: numericAmount,
           category,
           type: transactionType,
-          date: new Date().toISOString(),
+          date: new Date(selectedYear!, selectedMonth!, new Date().getDate()).toISOString(),
           isRecurring,
         }),
       });
 
-      if (!res.ok) throw new Error('Falha ao criar transação');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Falha ao criar transação');
+      }
 
       // Limpa o formulário e atualiza os dados
       setDescription('');
@@ -170,9 +173,9 @@ export default function HomePage() {
       setIsRecurring(false);
       setIsAddingTransaction(false);
       fetchData(); // Re-busca os dados para atualizar a UI
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('Ocorreu um erro ao salvar a transação.');
+      alert(error.message || 'Ocorreu um erro ao salvar a transação.');
     }
   };
 

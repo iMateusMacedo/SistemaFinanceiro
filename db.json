@@ -5,7 +5,7 @@
       "password": "$2b$10$I4TL/bHJGBZxXSsuF9EphOE91Eb0DJX8WWUh2F8xjfhOijRGAw75q",
       "name": "Mateus",
       "fullName": "Mateus Ferreira de Sá Macedo",
-      "totalBalance": 59918.1,
+      "totalBalance": 59838.1,
       "transactions": [
         {
           "id": 1,
@@ -32,20 +32,29 @@
           "category": "Lazer",
           "date": "2025-11-13T15:24:58.772Z",
           "isRecurring": false
+        },
+        {
+          "id": 4,
+          "description": "McDonalds",
+          "amount": 80,
+          "type": "EXPENSE",
+          "category": "Alimentação",
+          "date": "2025-11-17T22:08:41.565Z",
+          "isRecurring": false
         }
       ],
-      "monthlySalary": 1500,
+      "monthlySalary": 2500,
       "goalType": "daily",
       "goalAmount": 50,
       "currentSpent": 36.9,
-      "goalAmountDaily": 50,
-      "goalAmountWeekly": 375,
-      "goalAmountMonthly": 1500,
-      "currentSpentDaily": 45,
-      "currentSpentWeekly": 81.9,
-      "currentSpentMonthly": 81.9,
-      "lastDailyReset": "2025-11-13T03:00:00.000Z",
-      "lastWeeklyReset": "2025-11-09T03:00:00.000Z"
+      "goalAmountDaily": 83.33333333333333,
+      "goalAmountWeekly": 625,
+      "goalAmountMonthly": 2500,
+      "currentSpentDaily": 80,
+      "currentSpentWeekly": 80,
+      "currentSpentMonthly": 161.9,
+      "lastDailyReset": "2025-11-17T03:00:00.000Z",
+      "lastWeeklyReset": "2025-11-16T03:00:00.000Z"
     },
     {
       "email": "bibicabr95@gmail.com",
@@ -93,6 +102,102 @@
       "currentSpentMonthly": 0,
       "lastDailyReset": "2025-11-12T00:00:00.000Z",
       "lastWeeklyReset": "2025-11-10T00:00:00.000Z"
+    },
+    {
+      "email": "soprajogo1000@gmail.com",
+      "password": "$2b$10$zni2U42OYbMLThRUXZXxYebNSI3pbY4tzaxnvkVrJ8RbjThqP.S4S",
+      "name": "Mateus",
+      "fullName": "Mateus Macedo",
+      "totalBalance": 320,
+      "transactions": [
+        {
+          "id": 1,
+          "description": "Saldo Adicionado",
+          "amount": 100,
+          "type": "INCOME",
+          "category": "Adição de Saldo",
+          "date": "2025-11-17T22:20:49.960Z"
+        },
+        {
+          "id": 2,
+          "description": "Dinheiro",
+          "amount": 200,
+          "type": "INCOME",
+          "category": "Salário",
+          "date": "2025-11-17T22:21:10.798Z",
+          "isRecurring": false
+        },
+        {
+          "id": 3,
+          "description": "Despesa",
+          "amount": 150,
+          "type": "EXPENSE",
+          "category": "Lazer",
+          "date": "2025-11-17T22:21:39.964Z",
+          "isRecurring": false
+        },
+        {
+          "id": 4,
+          "description": "Despesa",
+          "amount": 20,
+          "type": "EXPENSE",
+          "category": "Compras",
+          "date": "2025-11-17T22:22:07.163Z",
+          "isRecurring": false
+        },
+        {
+          "id": 5,
+          "description": "Remedio",
+          "amount": 10,
+          "type": "EXPENSE",
+          "category": "Saúde",
+          "date": "2025-11-17T22:22:26.444Z",
+          "isRecurring": false
+        },
+        {
+          "id": 6,
+          "description": "Ganhos",
+          "amount": 500,
+          "type": "INCOME",
+          "category": "Transação",
+          "date": "2025-11-17T22:22:54.985Z",
+          "isRecurring": false
+        },
+        {
+          "id": 7,
+          "description": "Serviços",
+          "amount": 300,
+          "type": "EXPENSE",
+          "category": "Serviços",
+          "date": "2025-11-17T22:30:11.804Z",
+          "isRecurring": false
+        }
+      ],
+      "currentSpentDaily": 480,
+      "lastDailyReset": "2025-11-17T03:00:00.000Z",
+      "currentSpentWeekly": 480,
+      "lastWeeklyReset": "2025-11-16T03:00:00.000Z",
+      "currentSpentMonthly": 480,
+      "goalAmountDaily": 33.333333333333336,
+      "goalAmountWeekly": 250,
+      "goalAmountMonthly": 1000,
+      "monthlySalary": 1000
+    },
+    {
+      "email": "gostosopicudo@gmail.com",
+      "password": "$2b$10$ChhjkAyHrvWtP4LetKNsp.nxLMxnJamJCYuUAzIf7d4qwsVJ0RCY2",
+      "name": "Guilherme",
+      "fullName": "Guilherme Alexandre",
+      "totalBalance": 0,
+      "transactions": [],
+      "currentSpentDaily": 0,
+      "lastDailyReset": "2025-11-17T03:00:00.000Z",
+      "currentSpentWeekly": 0,
+      "lastWeeklyReset": "2025-11-16T03:00:00.000Z",
+      "currentSpentMonthly": 0,
+      "goalAmountDaily": 0,
+      "goalAmountWeekly": 0,
+      "goalAmountMonthly": 0
     }
   ]
 }
